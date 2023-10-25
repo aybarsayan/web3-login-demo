@@ -13,8 +13,8 @@ import {
   createCredential,
   createPresentation,
   selfAttestCredential,
-  getDomainLinkagePresentation,
-  verifyDidConfigPresentation
+  getDomainLinkagePresentation
+  // verifyDidConfigPresentation
 } from './wellKnownDIDConfiguration'
 
 /**
@@ -90,40 +90,50 @@ async function main() {
     '\n'
   )
 
+  const currentWellKnown = await readCurrentDidConfig()
+
+  console.log(
+    '\n',
+    'previous claimHash: ',
+    currentWellKnown.linked_dids[0].credentialSubject.rootHash
+  )
+
+  /// Jump the check
+
   // Before we start, it makes sense to check if the project already has a well-known-did-configuration.
   // Why? Because each time we make a new one, an attestation is needed and that costs a fee. If
   // working with the production Blockchain, you would want to spare this fee.
 
-  try {
-    // this will deliver an error, if the file can't be found
-    const currentWellKnown = await readCurrentDidConfig()
+  // try {
+  //   // this will deliver an error, if the file can't be found
+  //   const currentWellKnown = await readCurrentDidConfig()
 
-    // if no error:
-    console.log(
-      "An old well-known-did-config file was found. Let's check if it still valid"
-    )
-    try {
-      // this will deliver an error, if the presentation can´t be verify
-      await verifyDidConfigPresentation(dAppURI, currentWellKnown, domainOrigin)
+  //   // if no error:
+  //   console.log(
+  //     "An old well-known-did-config file was found. Let's check if it still valid"
+  //   )
+  //   try {
+  //     // this will deliver an error, if the presentation can´t be verify
+  //     await verifyDidConfigPresentation(dAppURI, currentWellKnown, domainOrigin)
 
-      //if no error:
-      console.log(
-        'A valid well-known-did-config was found on of your project. No need to make a new one.\n If you still want to make a new one, delete the old one first.'
-      )
-      // Stop running this script:
-      Kilt.disconnect()
-      return
-    } catch (err) {
-      console.log(
-        "The current well-known-did-config of your project is not valid (anymore). \n Let's proceed to make a new one!"
-      )
-      // if this is case, don't trow an error to the next catch
-    }
-  } catch (error) {
-    console.log(
-      "No old well-known-did-config was found. Let's proceed to make one!"
-    )
-  }
+  //     //if no error:
+  //     console.log(
+  //       'A valid well-known-did-config was found on of your project. No need to make a new one.\n If you still want to make a new one, delete the old one first.'
+  //     )
+  //     // Stop running this script:
+  //     Kilt.disconnect()
+  //     return
+  //   } catch (err) {
+  //     console.log(
+  //       "The current well-known-did-config of your project is not valid (anymore). \n Let's proceed to make a new one!"
+  //     )
+  //     // if this is case, don't trow an error to the next catch
+  //   }
+  // } catch (error) {
+  //   console.log(
+  //     "No old well-known-did-config was found. Let's proceed to make one!"
+  //   )
+  // }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // First Step: Create a Claim
@@ -142,12 +152,25 @@ async function main() {
   const dAppsDidKeys = generateKeyPairs(dAppMnemonic)
   const dappAccount = generateAccount(fundsMnemonic)
 
+  console.log('domainCredential: ', domainCredential)
+
+  console.log('Attest for the first time')
   // Writes the attestation on the blockchain
   await selfAttestCredential(
     domainCredential,
     dAppsDidKeys.assertionMethod,
     dappAccount
   )
+  console.log('finished first attestation')
+
+  console.log('Attest for the second time')
+
+  await selfAttestCredential(
+    domainCredential,
+    dAppsDidKeys.assertionMethod,
+    dappAccount
+  )
+  console.log('finished second attestation')
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Third Step: Create a presentation for the attested credential

@@ -281,17 +281,22 @@ export async function selfAttestCredential(
     throw new Error('Could not sing the self-attestation of the credential')
   }
 
-  // Since DIDs can not hold any balance, we pay for the transaction using our blockchain account
-  const result = await Kilt.Blockchain.signAndSubmitTx(
-    submitTx,
-    submitterAccount
-  )
-
-  if (result.isError) {
-    throw new Error('Attestation failed')
-  } else {
-    console.log('Attestation successful')
+  try {
+    // Since DIDs can not hold any balance, we pay for the transaction using our blockchain account
+    await Kilt.Blockchain.signAndSubmitTx(submitTx, submitterAccount)
+  } catch (error) {
+    console.log('The cached error: ', error)
   }
+
+  /// Only one attestation for each claimHash is possible!
+
+  /// need fix the error handling on main project
+
+  // if (result.isError) {
+  //   throw new Error('Attestation failed')
+  // } else {
+  //   console.log('Attestation successful')
+  // }
 }
 
 export async function verifyDidConfigPresentation(
